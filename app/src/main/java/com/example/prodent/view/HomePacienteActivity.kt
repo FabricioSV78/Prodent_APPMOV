@@ -40,10 +40,10 @@ class HomePacienteActivity : AppCompatActivity() {
                 }
 
                 R.id.nav_calendar -> {
-                    val intent = Intent(this, RegistrarCitaActivity::class.java)
-                    startActivity(intent)
+                    startActivity(Intent(this, CitasPacienteActivity::class.java))
                     true
                 }
+
 
                 R.id.nav_configuracion -> {
                     startActivity(Intent(this, ConfiguracionActivity::class.java))

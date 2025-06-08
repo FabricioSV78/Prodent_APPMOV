@@ -19,6 +19,7 @@
         <activity android:name=".view.RegistrarCitaActivity" />
         <activity android:name=".view.ConfiguracionActivity" />
         <activity android:name=".view.PerfilActivity" />
+        <activity android:name=".view.CitasPacienteActivity" />
 
         <activity
             android:name=".view.LoginActivity"

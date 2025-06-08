@@ -90,27 +90,35 @@ class CitaViewModel : ViewModel() {
     }
     // Cargar horarios disponibles para un doctor y una fecha
     fun cargarHorarios(doctorId: String, fecha: String) {
-        Log.d("DEBUG_FIRESTORE", "Consultando horarios → doctorId: $doctorId, fecha: $fecha")
-
-        db.collection("horarios")
+        val horariosRef = db.collection("horarios")
             .whereEqualTo("doctorId", doctorId)
             .whereEqualTo("fecha", fecha)
-            .get()
-            .addOnSuccessListener { result ->
-                Log.d("DEBUG_FIRESTORE", "Horarios encontrados: ${result.size()}")
 
-                result.forEach { doc ->
-                    Log.d("DEBUG_FIRESTORE", "📄 ${doc.id} → ${doc.data}")
+        val citasRef = db.collection("citas")
+            .whereEqualTo("doctorId", doctorId)
+            .whereEqualTo("fecha", fecha)
+
+        horariosRef.get().addOnSuccessListener { horariosDocs ->
+            val horariosDisponibles = horariosDocs.map { it.toObject(Horario::class.java) }.toMutableList()
+
+            citasRef.get().addOnSuccessListener { citasDocs ->
+                val horasReservadas = citasDocs.mapNotNull { it.getString("hora") }
+
+                // Filtrar horarios que no están reservados
+                val filtrados = horariosDisponibles.filter { horario ->
+                    val horaCompleta = "${horario.horaInicio} - ${horario.horaFin}"
+                    !horasReservadas.contains(horaCompleta)
                 }
 
-                val horariosList = result.map { it.toObject(Horario::class.java) }
-                _horarios.value = horariosList
+                _horarios.value = filtrados
+            }.addOnFailureListener {
+                _horarios.value = horariosDisponibles // Si no se pudo obtener citas, mostrar todos
             }
-            .addOnFailureListener {
-                Log.e("DEBUG_FIRESTORE", "Error al consultar horarios", it)
-                _horarios.value = emptyList()
-            }
+        }.addOnFailureListener {
+            _horarios.value = emptyList()
+        }
     }
+
 
 
 }

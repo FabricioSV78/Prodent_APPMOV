@@ -148,7 +148,7 @@ class RegistrarCitaActivity : AppCompatActivity() {
 
                         // Crear cita
                         val cita = Cita(
-                            paciente = nombrePaciente,
+                            paciente = uid,
                             fecha = selectedDate,
                             hora = selectedTime,
                             estado = "pendiente",

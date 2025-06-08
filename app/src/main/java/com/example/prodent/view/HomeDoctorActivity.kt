@@ -15,6 +15,7 @@ import java.util.Calendar
 import android.graphics.Color
 import android.view.Gravity
 import com.example.prodent.databinding.ActivityHomedoctorBinding
+import com.google.firebase.firestore.FirebaseFirestore
 
 
 class HomeDoctorActivity : AppCompatActivity() {
@@ -43,8 +44,22 @@ class HomeDoctorActivity : AppCompatActivity() {
                 }
                 binding.contenedorCitas.addView(mensaje)
             } else {
-                citas.forEach { agregarCitaUI(it) }
+                val formato = java.text.SimpleDateFormat("d/M/yyyy HH:mm", java.util.Locale.getDefault())
+                val ahora = java.util.Calendar.getInstance().time
+
+                citas.forEach { cita ->
+                    try {
+                        val horaInicio = cita.hora.split(" - ")[0]
+                        val fechaHora = formato.parse("${cita.fecha} $horaInicio")
+                        if (fechaHora != null && fechaHora.after(ahora)) {
+                            agregarCitaUI(cita)
+                        }
+                    } catch (e: Exception) {
+                        agregarCitaUI(cita)
+                    }
+                }
             }
+
         })
 
         // Fecha actual al abrir la pantalla
@@ -111,7 +126,20 @@ class HomeDoctorActivity : AppCompatActivity() {
         val tarjeta = layoutInflater.inflate(R.layout.item_cita, binding.contenedorCitas, false)
         tarjeta.findViewById<TextView>(R.id.tvFechaHora).text =
             "Tu próxima cita es el ${cita.fecha} a las ${cita.hora}"
-        tarjeta.findViewById<TextView>(R.id.tvPaciente).text = cita.paciente
+        val tvPaciente = tarjeta.findViewById<TextView>(R.id.tvPaciente)
+        FirebaseFirestore.getInstance()
+            .collection("usuarios")
+            .document(cita.paciente)
+            .get()
+            .addOnSuccessListener { doc ->
+                val nombre = doc.getString("nombre") ?: ""
+                val apellido = doc.getString("apellido") ?: ""
+                tvPaciente.text = "Paciente: $nombre $apellido"
+            }
+            .addOnFailureListener {
+                tvPaciente.text = "Paciente no disponible"
+            }
+
         binding.contenedorCitas.addView(tarjeta)
     }
 }

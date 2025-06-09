@@ -30,6 +30,11 @@ class HomePacienteActivity : AppCompatActivity() {
 
         binding.bottomNavigationView.selectedItemId = R.id.nav_home
 
+        binding.mapaLayout.setOnClickListener {
+            val intent = Intent(this, MapaActivity::class.java)
+            startActivity(intent)
+            true
+        }
         // Navegación inferior
         binding.bottomNavigationView.setOnItemSelectedListener { item ->
             when (item.itemId) {
@@ -58,7 +63,7 @@ class HomePacienteActivity : AppCompatActivity() {
 
         viewModel.obtenerCitasPaciente(pacienteId)
 
-        viewModel.citasPendientesPacientes.observe(this) { citas ->
+        viewModel.citasPendientes.observe(this) { citas ->
             binding.contenedorCitasPaciente.removeAllViews()
             if (citas.isEmpty()) {
                 val mensaje = TextView(this).apply {

@@ -19,7 +19,7 @@
         <activity android:name=".view.RegistrarCitaActivity" />
         <activity android:name=".view.ConfiguracionActivity" />
         <activity android:name=".view.PerfilActivity" />
-
+        <activity android:name=".view.MapaActivity" />
         <activity
             android:name=".view.LoginActivity"
             android:exported="true"

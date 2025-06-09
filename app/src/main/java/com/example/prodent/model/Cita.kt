@@ -5,5 +5,6 @@ data class Cita(
     val fecha: String = "",
     val hora: String = "",
     val estado: String = "",
-    val doctorId: String = ""
+    val doctorId: String = "",
+
 )

@@ -20,6 +20,9 @@ class CitasPacienteViewModel : ViewModel() {
     private val _citasPasadas = MutableLiveData<List<Cita>>()
     val citasPasadas: LiveData<List<Cita>> = _citasPasadas
 
+    private val _calificaciones = MutableLiveData<Map<String, Double>>()
+    val calificaciones: LiveData<Map<String, Double>> = _calificaciones
+
     fun cargarCitas() {
         val pacienteId = auth.currentUser?.uid ?: return
         db.collection("citas")
@@ -44,7 +47,22 @@ class CitasPacienteViewModel : ViewModel() {
 
                 _citasPendientes.value = pendientes
                 _citasPasadas.value = pasadas
+                cargarCalificaciones(pacienteId)  // Llamada para cargar las calificaciones
             }
     }
 
+    private fun cargarCalificaciones(pacienteId: String) {
+        db.collection("calificaciones_doctor")
+            .whereEqualTo("pacienteId", pacienteId)
+            .get()
+            .addOnSuccessListener { result ->
+                val calificacionesMap = mutableMapOf<String, Double>()
+                for (doc in result) {
+                    val doctorId = doc.getString("doctorId") ?: continue
+                    val calificacion = doc.getDouble("calificacion") ?: 0.0
+                    calificacionesMap[doctorId] = calificacion
+                }
+                _calificaciones.value = calificacionesMap
+            }
+    }
 }

@@ -14,6 +14,8 @@ class PerfilActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPerfilBinding
     private val viewModel = PerfilViewModel()
 
+    private var rolUsuario: String = ""
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityPerfilBinding.inflate(layoutInflater)
@@ -22,6 +24,7 @@ class PerfilActivity : AppCompatActivity() {
         viewModel.obtenerDatosUsuario { usuario ->
             binding.etNombre.setText(usuario.nombre)
             binding.etCorreo.setText(usuario.correo)
+            rolUsuario = usuario.rol // ← guarda el rol para navegación
 
             if (usuario.rol == "Paciente") {
                 binding.etTelefono.setText(usuario.telefono)
@@ -57,17 +60,22 @@ class PerfilActivity : AppCompatActivity() {
         binding.bottomNavigationView.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
-                    val destino = if (viewModel.rolUsuario == "Doctor") {
-                        HomeDoctorActivity::class.java
+                    val intent = if (rolUsuario == "Doctor") {
+                        Intent(this, HomeDoctorActivity::class.java)
                     } else {
-                        HomePacienteActivity::class.java
+                        Intent(this, HomePacienteActivity::class.java)
                     }
-                    startActivity(Intent(this, destino))
+                    startActivity(intent)
                     true
                 }
 
                 R.id.nav_calendar -> {
-                    startActivity(Intent(this, RegistrarCitaActivity::class.java))
+                    val intent = if (rolUsuario == "Doctor") {
+                        Intent(this, HorarioActivity::class.java)
+                    } else {
+                        Intent(this, CitasPacienteActivity::class.java)
+                    }
+                    startActivity(intent)
                     true
                 }
 
@@ -79,7 +87,6 @@ class PerfilActivity : AppCompatActivity() {
                 else -> false
             }
         }
-
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

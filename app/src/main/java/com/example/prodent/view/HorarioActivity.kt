@@ -75,6 +75,11 @@ class HorarioActivity : AppCompatActivity() {
                     startActivity(Intent(this, HorarioActivity::class.java))
                     true
                 }
+
+                R.id.nav_configuracion -> {
+                    startActivity(Intent(this, ConfiguracionActivity::class.java))
+                    true
+                }
                 else -> false
             }
         }

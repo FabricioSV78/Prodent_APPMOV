@@ -1,31 +1,34 @@
 package com.example.prodent.view
 
 import android.content.Intent
+import android.graphics.Paint
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.example.prodent.R
-import com.example.prodent.databinding.ActivityConfiguracionBinding
-import com.example.prodent.viewmodel.ConfiguracionViewModel
+import com.example.prodent.databinding.ActivityMapaBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
-class ConfiguracionActivity : AppCompatActivity() {
+class MapaActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityConfiguracionBinding
-    private val viewModel = ConfiguracionViewModel()
-    private var rolUsuario: String = ""
+    private lateinit var binding: ActivityMapaBinding
+    private lateinit var rolUsuario: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityConfiguracionBinding.inflate(layoutInflater)
+        binding = ActivityMapaBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Subrayar texto
+        binding.verhorariosTv.paintFlags = binding.verhorariosTv.paintFlags or Paint.UNDERLINE_TEXT_FLAG
 
         // Obtener rol del usuario
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         FirebaseFirestore.getInstance().collection("usuarios").document(uid).get()
-            .addOnSuccessListener { doc ->
-                rolUsuario = doc.getString("rol") ?: ""
+            .addOnSuccessListener { document ->
+                rolUsuario = document.getString("rol") ?: ""
 
+                // Configurar navegación inferior después de conocer el rol
                 binding.bottomNavigationView.setOnItemSelectedListener { item ->
                     when (item.itemId) {
                         R.id.nav_home -> {
@@ -49,7 +52,7 @@ class ConfiguracionActivity : AppCompatActivity() {
                         }
 
                         R.id.nav_configuracion -> {
-                            // Ya estás en esta pantalla
+                            startActivity(Intent(this, ConfiguracionActivity::class.java))
                             true
                         }
 
@@ -57,16 +60,5 @@ class ConfiguracionActivity : AppCompatActivity() {
                     }
                 }
             }
-
-        binding.tvEditarPerfil.setOnClickListener {
-            startActivity(Intent(this, PerfilActivity::class.java))
-        }
-
-        binding.tvCerrarSesion.setOnClickListener {
-            viewModel.cerrarSesion {
-                startActivity(Intent(this, LoginActivity::class.java))
-                finish()
-            }
-        }
     }
 }

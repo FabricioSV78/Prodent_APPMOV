@@ -23,4 +23,6 @@
     <string name="bienvenido_doc">Bienvenido Doctor👋</string>
     <string name="qu_deseas_hacer_hoy">¿Que deseas hacer hoy?</string>
     <string name="configuraci_n">Configuración</string>
+    <string name="direccion">Av. Mansiche 840, Trujillo 130011</string>
+    <string name="ver_h">Ver horarios</string>
 </resources>

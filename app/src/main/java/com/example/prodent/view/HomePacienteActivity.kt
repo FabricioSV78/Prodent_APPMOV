@@ -63,7 +63,7 @@ class HomePacienteActivity : AppCompatActivity() {
 
         viewModel.obtenerCitasPaciente(pacienteId)
 
-        viewModel.citasPendientes.observe(this) { citas ->
+        viewModel.citasPendientesPacientes.observe(this) { citas ->
             binding.contenedorCitasPaciente.removeAllViews()
             if (citas.isEmpty()) {
                 val mensaje = TextView(this).apply {

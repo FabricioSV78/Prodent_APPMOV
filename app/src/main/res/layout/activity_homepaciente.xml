@@ -66,6 +66,7 @@
                     android:layout_marginTop="10dp"/>
             </LinearLayout>
         </ScrollView>
+
     </LinearLayout>
     <LinearLayout
         android:id="@+id/mapaLayout"
@@ -73,7 +74,8 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginBottom="10dp">
+        android:layout_marginBottom="10dp"
+        android:paddingBottom="15dp">
         <ImageView
             android:layout_width="20dp"
             android:layout_height="20dp"

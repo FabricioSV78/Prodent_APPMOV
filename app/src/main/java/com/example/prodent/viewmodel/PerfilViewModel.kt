@@ -24,7 +24,8 @@ class PerfilViewModel : ViewModel() {
                     nombre = doc.getString("nombre") ?: "",
                     apellido = doc.getString("apellido") ?: "",
                     correo = doc.getString("correo") ?: "",
-                    rol = rol
+                    rol = rol,
+                    fotoBase64 = doc.getString("fotoBase64")
                 )
 
                 if (rol == "Paciente") {
@@ -46,7 +47,6 @@ class PerfilViewModel : ViewModel() {
         nombre: String,
         correo: String,
         telefono: String,
-        nuevaContrasena: String,
         callback: (String) -> Unit
     ) {
         val uid = auth.currentUser?.uid ?: return
@@ -58,7 +58,6 @@ class PerfilViewModel : ViewModel() {
 
         db.collection("usuarios").document(uid).update(datosActualizados)
             .addOnSuccessListener {
-                // Actualizar teléfono solo si es paciente
                 if (rolUsuario == "Paciente") {
                     db.collection("pacientes")
                         .whereEqualTo("usuarioId", uid)
@@ -74,14 +73,19 @@ class PerfilViewModel : ViewModel() {
 
                 val user = auth.currentUser
                 user?.updateEmail(correo)
-                if (nuevaContrasena.isNotBlank()) {
-                    user?.updatePassword(nuevaContrasena)
-                }
-
                 callback("Perfil actualizado correctamente")
             }
             .addOnFailureListener {
                 callback("Error al actualizar perfil: ${it.message}")
             }
     }
+
+    fun actualizarFotoPerfil(base64: String, onResult: (String) -> Unit) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return onResult("Usuario no autenticado")
+        FirebaseFirestore.getInstance().collection("usuarios").document(uid)
+            .update("fotoBase64", base64)
+            .addOnSuccessListener { onResult("Foto actualizada con éxito") }
+            .addOnFailureListener { onResult("Error al guardar la foto") }
+    }
+
 }

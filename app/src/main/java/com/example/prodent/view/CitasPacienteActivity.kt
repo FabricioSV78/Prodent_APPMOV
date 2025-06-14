@@ -1,7 +1,9 @@
 package com.example.prodent.view
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
@@ -101,35 +103,49 @@ class CitasPacienteActivity : AppCompatActivity() {
 
     private fun renderCitasPendientes(citas: List<Cita>) {
         binding.containerCitas.removeAllViews()
+        citas.forEach { cita ->
+            val view = layoutInflater.inflate(R.layout.item_cita_paciente_pendiente, binding.containerCitas, false)
 
-        if (citas.isEmpty()) {
-            agregarMensaje("No tienes citas pendientes")
-            return
-        }
+            val tvFechaCita = view.findViewById<TextView>(R.id.tvFechaCita)
+            val tvHoraCita = view.findViewById<TextView>(R.id.tvHoraCita)
+            val tvDoctorCita = view.findViewById<TextView>(R.id.tvDoctorCita)
+            val btnCancelar = view.findViewById<Button>(R.id.btnCancelar)
 
-        for (cita in citas) {
-            val view = LayoutInflater.from(this).inflate(R.layout.item_cita_paciente_pendiente, binding.containerCitas, false)
-            view.findViewById<TextView>(R.id.tvFechaCita).text = cita.fecha
-            view.findViewById<TextView>(R.id.tvHoraCita).text = cita.hora
+            tvFechaCita.text = cita.fecha
+            tvHoraCita.text = cita.hora
 
-            firestore.collection("usuarios").document(cita.doctorId)
+            FirebaseFirestore.getInstance()
+                .collection("usuarios")
+                .document(cita.doctorId)
                 .get()
                 .addOnSuccessListener { doc ->
                     val nombre = doc.getString("nombre") ?: ""
-                    val nombreCompleto = "Dr. $nombre"
-                    view.findViewById<TextView>(R.id.tvDoctorCita).text = nombreCompleto
+                    tvDoctorCita.text = "$nombre"
                 }
                 .addOnFailureListener {
-                    view.findViewById<TextView>(R.id.tvDoctorCita).text = "Doctor"
+                    tvDoctorCita.text = "Nombre no disponible"
                 }
 
-            view.findViewById<TextView>(R.id.btnCancelar).setOnClickListener {
-                Toast.makeText(this, "Cancelar no implementado", Toast.LENGTH_SHORT).show()
+            btnCancelar.setOnClickListener {
+                FirebaseFirestore.getInstance().collection("citas")
+                    .whereEqualTo("paciente", cita.paciente)
+                    .whereEqualTo("fecha", cita.fecha)
+                    .whereEqualTo("hora", cita.hora)
+                    .whereEqualTo("doctorId", cita.doctorId)
+                    .get()
+                    .addOnSuccessListener { result ->
+                        for (document in result) {
+                            FirebaseFirestore.getInstance().collection("citas").document(document.id).delete()
+                        }
+                        Toast.makeText(this, "Cita cancelada", Toast.LENGTH_SHORT).show()
+                        viewModel.cargarCitas()
+                    }
             }
-
             binding.containerCitas.addView(view)
         }
     }
+
+
 
     private fun renderCitasPasadas(citas: List<Cita>) {
         binding.containerCitas.removeAllViews()

@@ -59,42 +59,9 @@ class HomePacienteActivity : AppCompatActivity() {
             }
         }
 
-        val pacienteId = FirebaseAuth.getInstance().currentUser?.uid ?: return
-
-        viewModel.obtenerCitasPaciente(pacienteId)
-
-        viewModel.citasPendientesPacientes.observe(this) { citas ->
-            binding.contenedorCitasPaciente.removeAllViews()
-            if (citas.isEmpty()) {
-                val mensaje = TextView(this).apply {
-                    text = "No tienes citas"
-                    textSize = 16f
-                    gravity = Gravity.CENTER
-                    setTextColor(Color.GRAY)
-                }
-                binding.contenedorCitasPaciente.addView(mensaje)
-            } else {
-                citas.forEach { cita ->
-                    val tarjeta = layoutInflater.inflate(R.layout.item_cita_paciente, binding.contenedorCitasPaciente, false)
-                    tarjeta.findViewById<TextView>(R.id.tvInfoCita).text = "Tu próxima cita es el ${cita.fecha} a las ${cita.hora}"
-                    FirebaseFirestore.getInstance()
-                        .collection("doctores")
-                        .document(cita.doctorId)
-                        .get()
-                        .addOnSuccessListener { doc ->
-                            val nombreDoctor = doc.getString("nombre") ?: "Doctor"
-                            tarjeta.findViewById<TextView>(R.id.tvDoctorCita).text = nombreDoctor
-                        }
-                        .addOnFailureListener {
-                            tarjeta.findViewById<TextView>(R.id.tvDoctorCita).text = "Nombre no disponible"
-                        }
-
-                    // 3. Agrega la tarjeta al contenedor
-                    binding.contenedorCitasPaciente.addView(tarjeta)
-                } }
             }
 
 
         }
-    }
+
 

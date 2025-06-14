@@ -6,16 +6,55 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.prodent.R
 import com.example.prodent.databinding.ActivityConfiguracionBinding
 import com.example.prodent.viewmodel.ConfiguracionViewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class ConfiguracionActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityConfiguracionBinding
     private val viewModel = ConfiguracionViewModel()
+    private var rolUsuario: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityConfiguracionBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        FirebaseFirestore.getInstance().collection("usuarios").document(uid).get()
+            .addOnSuccessListener { doc ->
+                rolUsuario = doc.getString("rol") ?: ""
+
+                binding.bottomNavigationView.setOnItemSelectedListener { item ->
+                    when (item.itemId) {
+                        R.id.nav_home -> {
+                            val intent = if (rolUsuario == "Doctor") {
+                                Intent(this, HomeDoctorActivity::class.java)
+                            } else {
+                                Intent(this, HomePacienteActivity::class.java)
+                            }
+                            startActivity(intent)
+                            true
+                        }
+
+                        R.id.nav_calendar -> {
+                            val intent = if (rolUsuario == "Doctor") {
+                                Intent(this, HorarioActivity::class.java)
+                            } else {
+                                Intent(this, CitasPacienteActivity::class.java)
+                            }
+                            startActivity(intent)
+                            true
+                        }
+
+                        R.id.nav_configuracion -> {
+                            true
+                        }
+
+                        else -> false
+                    }
+                }
+            }
 
         binding.tvEditarPerfil.setOnClickListener {
             startActivity(Intent(this, PerfilActivity::class.java))
@@ -27,27 +66,5 @@ class ConfiguracionActivity : AppCompatActivity() {
                 finish()
             }
         }
-
-        binding.bottomNavigationView.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home -> {
-                    startActivity(Intent(this, HomePacienteActivity::class.java)) // o HomeDoctorActivity si detectas rol
-                    true
-                }
-
-                R.id.nav_calendar -> {
-                    startActivity(Intent(this, RegistrarCitaActivity::class.java))
-                    true
-                }
-
-                R.id.nav_configuracion -> {
-                    startActivity(Intent(this, ConfiguracionActivity::class.java))
-                    true
-                }
-
-                else -> false
-            }
-        }
-
     }
 }

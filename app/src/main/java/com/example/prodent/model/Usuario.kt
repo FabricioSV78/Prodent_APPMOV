@@ -6,5 +6,6 @@ data class Usuario(
     val apellido: String,
     val correo: String,
     val rol: String,
-    val telefono: String = ""
+    val telefono: String = "",
+    val fotoBase64: String? = null
 )

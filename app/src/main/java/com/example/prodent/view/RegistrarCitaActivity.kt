@@ -77,6 +77,11 @@ class RegistrarCitaActivity : AppCompatActivity() {
                     startActivity(intent)
                     true
                 }
+
+                R.id.nav_configuracion -> {
+                    startActivity(Intent(this, ConfiguracionActivity::class.java))
+                    true
+                }
                 else -> false
             }
         }

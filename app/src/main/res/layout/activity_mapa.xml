@@ -171,20 +171,32 @@
                 android:orientation="horizontal"
                 android:padding="8dp">
                 <ImageView
+                    android:id="@+id/whatsIv"
                     android:layout_width="0dp"
                     android:layout_height="50dp"
                     android:layout_weight="1"
-                    android:src="@drawable/wts"/>
+                    android:src="@drawable/wts"
+                    android:contentDescription="Whatsapp"
+                    android:clickable="true"
+                    android:focusable="true"/>
                 <ImageView
+                    android:id="@+id/instaIv"
                     android:layout_width="0dp"
                     android:layout_height="50dp"
                     android:layout_weight="1"
-                    android:src="@drawable/insta"/>
+                    android:src="@drawable/insta"
+                    android:contentDescription="Instagram"
+                    android:clickable="true"
+                    android:focusable="true"/>
                 <ImageView
+                    android:id="@+id/faceIv"
                     android:layout_width="0dp"
                     android:layout_height="50dp"
                     android:layout_weight="1"
-                    android:src="@drawable/face"/>
+                    android:src="@drawable/face"
+                    android:contentDescription="Facebook"
+                    android:clickable="true"
+                    android:focusable="true"/>
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

@@ -47,7 +47,7 @@ class CitasPacienteViewModel : ViewModel() {
 
                 _citasPendientes.value = pendientes
                 _citasPasadas.value = pasadas
-                cargarCalificaciones(pacienteId)  // Llamada para cargar las calificaciones
+                cargarCalificaciones(pacienteId)
             }
     }
 

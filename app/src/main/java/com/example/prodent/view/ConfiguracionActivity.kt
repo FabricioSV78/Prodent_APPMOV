@@ -20,7 +20,6 @@ class ConfiguracionActivity : AppCompatActivity() {
         binding = ActivityConfiguracionBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Obtener rol del usuario
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         FirebaseFirestore.getInstance().collection("usuarios").document(uid).get()
             .addOnSuccessListener { doc ->
@@ -49,7 +48,6 @@ class ConfiguracionActivity : AppCompatActivity() {
                         }
 
                         R.id.nav_configuracion -> {
-                            // Ya estás en esta pantalla
                             true
                         }
 

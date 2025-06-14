@@ -90,7 +90,7 @@
                 android:textColor="@android:color/black"
                 android:layout_marginBottom="16dp" />
 
-            <!-- CONTRASEÑA -->
+            <!-- CONTRASEÑA
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -107,7 +107,7 @@
                 android:backgroundTint="#CFE8F3"
                 android:background="@android:color/darker_gray"
                 android:textColor="@android:color/black"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="16dp" />-->
 
             <!-- TELÉFONO (solo para paciente) -->
             <TextView

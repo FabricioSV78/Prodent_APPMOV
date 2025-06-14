@@ -1,6 +1,8 @@
 package com.example.prodent.view
 
 import android.content.Intent
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -24,7 +26,7 @@ class PerfilActivity : AppCompatActivity() {
         viewModel.obtenerDatosUsuario { usuario ->
             binding.etNombre.setText(usuario.nombre)
             binding.etCorreo.setText(usuario.correo)
-            rolUsuario = usuario.rol // ← guarda el rol para navegación
+            rolUsuario = usuario.rol
 
             if (usuario.rol == "Paciente") {
                 binding.etTelefono.setText(usuario.telefono)
@@ -34,19 +36,24 @@ class PerfilActivity : AppCompatActivity() {
                 binding.etTelefono.visibility = View.GONE
                 binding.tvTelefonoLabel.visibility = View.GONE
             }
+
+            if (!usuario.fotoBase64.isNullOrEmpty()) {
+                val bytes = android.util.Base64.decode(usuario.fotoBase64, android.util.Base64.DEFAULT)
+                val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                binding.ivFotoPerfil.setImageBitmap(bitmap)
+            }
+
         }
 
         binding.btnGuardar.setOnClickListener {
             val nombre = binding.etNombre.text.toString().trim()
             val correo = binding.etCorreo.text.toString().trim()
             val telefono = binding.etTelefono.text.toString().trim()
-            val nuevaContrasena = binding.etContrasena.text.toString().trim()
 
             viewModel.actualizarDatosPerfil(
                 nombre = nombre,
                 correo = correo,
                 telefono = telefono,
-                nuevaContrasena = nuevaContrasena
             ) { mensaje ->
                 Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show()
             }
@@ -89,13 +96,33 @@ class PerfilActivity : AppCompatActivity() {
         }
     }
 
+    private fun convertirImagenABase64(uri: Uri): String? {
+        return try {
+            val inputStream = contentResolver.openInputStream(uri)
+            val bytes = inputStream?.readBytes()
+            inputStream?.close()
+            android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1001 && resultCode == RESULT_OK) {
             val uri = data?.data
             uri?.let {
                 binding.ivFotoPerfil.setImageURI(it)
+
+                val base64 = convertirImagenABase64(it)
+                if (!base64.isNullOrEmpty()) {
+                    viewModel.actualizarFotoPerfil(base64) { mensaje ->
+                        Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
     }
+
 }

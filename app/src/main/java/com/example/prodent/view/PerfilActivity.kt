@@ -4,12 +4,15 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.util.Patterns
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.prodent.databinding.ActivityPerfilBinding
 import com.example.prodent.viewmodel.PerfilViewModel
 import com.example.prodent.R
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class PerfilActivity : AppCompatActivity() {
 
@@ -22,6 +25,7 @@ class PerfilActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityPerfilBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.bottomNavigationView.selectedItemId = R.id.nav_configuracion
 
         viewModel.obtenerDatosUsuario { usuario ->
             binding.etNombre.setText(usuario.nombre)
@@ -45,10 +49,24 @@ class PerfilActivity : AppCompatActivity() {
 
         }
 
+        fun isPhoneValid(phone: String): Boolean {
+            return phone.matches(Regex("^9\\d{8}$"))
+        }
+
         binding.btnGuardar.setOnClickListener {
             val nombre = binding.etNombre.text.toString().trim()
             val correo = binding.etCorreo.text.toString().trim()
             val telefono = binding.etTelefono.text.toString().trim()
+
+            if (correo.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
+                Toast.makeText(this, "Correo inválido", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (rolUsuario == "Paciente" && !isPhoneValid(telefono)) {
+                Toast.makeText(this, "Teléfono inválido (debe comenzar con 9 y tener 9 dígitos)", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
 
             viewModel.actualizarDatosPerfil(
                 nombre = nombre,
@@ -58,6 +76,7 @@ class PerfilActivity : AppCompatActivity() {
                 Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show()
             }
         }
+
 
         binding.ivFotoPerfil.setOnClickListener {
             val intent = Intent(Intent.ACTION_PICK).apply { type = "image/*" }
@@ -73,6 +92,7 @@ class PerfilActivity : AppCompatActivity() {
                         Intent(this, HomePacienteActivity::class.java)
                     }
                     startActivity(intent)
+                    finish()
                     true
                 }
 
@@ -83,6 +103,13 @@ class PerfilActivity : AppCompatActivity() {
                         Intent(this, CitasPacienteActivity::class.java)
                     }
                     startActivity(intent)
+                    finish()
+                    true
+                }
+
+                R.id.nav_notifications -> {
+                    startActivity(Intent(this, NotificacionesActivity::class.java))
+                    finish()
                     true
                 }
 
@@ -94,6 +121,20 @@ class PerfilActivity : AppCompatActivity() {
                 else -> false
             }
         }
+
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val db = FirebaseFirestore.getInstance()
+
+        db.collection("notificaciones")
+            .whereEqualTo("uid", uid)
+            .whereEqualTo("visto", false)
+            .get()
+            .addOnSuccessListener { result ->
+                if (!result.isEmpty) {
+                    val badge = binding.bottomNavigationView.getOrCreateBadge(R.id.nav_notifications)
+                    badge.isVisible = true
+                }
+            }
     }
 
     private fun convertirImagenABase64(uri: Uri): String? {

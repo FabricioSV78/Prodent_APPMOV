@@ -88,4 +88,6 @@ class PerfilViewModel : ViewModel() {
             .addOnFailureListener { onResult("Error al guardar la foto") }
     }
 
+
+
 }

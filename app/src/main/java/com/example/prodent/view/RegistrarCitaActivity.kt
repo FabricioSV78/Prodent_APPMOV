@@ -21,7 +21,9 @@ import com.example.prodent.databinding.ActivityHomepacienteBinding
 import com.example.prodent.databinding.ActivityRegistrarCitaBinding
 import com.example.prodent.model.Cita
 import com.example.prodent.model.Doctor
+import com.example.prodent.model.NotificacionCita
 import com.example.prodent.viewmodel.CitaViewModel
+import com.example.prodent.viewmodel.NotificacionesViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -40,6 +42,8 @@ class RegistrarCitaActivity : AppCompatActivity() {
     private val citaViewModel: CitaViewModel by viewModels()
     private var listaDoctores: List<Doctor> = listOf()
     private lateinit var binding: ActivityRegistrarCitaBinding
+    private val notificacionesViewModel: NotificacionesViewModel by viewModels()
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,18 +72,24 @@ class RegistrarCitaActivity : AppCompatActivity() {
         binding.bottomNavigationView.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
-                    val intent = Intent(this, HomePacienteActivity::class.java)
-                    startActivity(intent)
+                    startActivity(Intent(this, HomePacienteActivity::class.java))
+                    finish()
                     true
                 }
                 R.id.nav_calendar -> {
-                    val intent = Intent(this, RegistrarCitaActivity::class.java)
-                    startActivity(intent)
+                    startActivity(Intent(this, RegistrarCitaActivity::class.java))
+                    true
+                }
+
+                R.id.nav_notifications -> {
+                    startActivity(Intent(this, NotificacionesActivity::class.java))
+                    finish()
                     true
                 }
 
                 R.id.nav_configuracion -> {
                     startActivity(Intent(this, ConfiguracionActivity::class.java))
+                    finish()
                     true
                 }
                 else -> false
@@ -162,6 +172,30 @@ class RegistrarCitaActivity : AppCompatActivity() {
 
                         // Guardar cita
                         citaViewModel.guardarCita(cita)
+
+                        // Crear notificación para el usuario
+                        val horaSplit = selectedTime.split(" - ")
+                        val notificacion = NotificacionCita(
+                            mensaje = "Tienes una cita programada para el $selectedDate",
+                            horaInicio = horaSplit[0],
+                            horaFin = horaSplit[1]
+                        )
+                        notificacionesViewModel.agregarNotificacion(notificacion)
+
+                        // Notificación para el doctor
+                        val notificacionDoctor = mapOf(
+                            "uid" to selectedDoctor,
+                            "mensaje" to "Se ha reservado una nueva cita para el $selectedDate",
+                            "horaInicio" to horaSplit[0],
+                            "horaFin" to horaSplit[1],
+                            "timestamp" to System.currentTimeMillis()
+                        )
+
+                        FirebaseFirestore.getInstance()
+                            .collection("notificaciones")
+                            .add(notificacionDoctor)
+
+
                         Toast.makeText(this, "Cita reservada para el $selectedDate a las $selectedTime", Toast.LENGTH_SHORT).show()
                     }
                     .addOnFailureListener {
@@ -171,5 +205,20 @@ class RegistrarCitaActivity : AppCompatActivity() {
                 Toast.makeText(this, "Selecciona una cita", Toast.LENGTH_SHORT).show()
             }
         }
+
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val db = FirebaseFirestore.getInstance()
+
+        db.collection("notificaciones")
+            .whereEqualTo("uid", uid)
+            .whereEqualTo("visto", false)
+            .get()
+            .addOnSuccessListener { result ->
+                if (!result.isEmpty) {
+                    val badge = binding.bottomNavigationView.getOrCreateBadge(R.id.nav_notifications)
+                    badge.isVisible = true
+                }
+            }
+
     }
 }

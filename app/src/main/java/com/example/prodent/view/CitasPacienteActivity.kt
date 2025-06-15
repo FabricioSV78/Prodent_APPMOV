@@ -20,7 +20,9 @@ import com.example.prodent.R
 import com.example.prodent.databinding.ActivityCitaspacienteBinding
 import com.example.prodent.model.CalificacionDoctor
 import com.example.prodent.model.Cita
+import com.example.prodent.model.NotificacionCita
 import com.example.prodent.viewmodel.CitasPacienteViewModel
+import com.example.prodent.viewmodel.NotificacionesViewModel
 import com.google.android.material.tabs.TabLayout
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -32,12 +34,14 @@ class CitasPacienteActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityCitaspacienteBinding
     private val viewModel: CitasPacienteViewModel by viewModels()
+    private val notificacionesViewModel: NotificacionesViewModel by viewModels()
     private val firestore = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityCitaspacienteBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.bottomNavigationView.selectedItemId = R.id.nav_calendar
 
         setupTabs()
         setupReservaCitaButton()
@@ -47,21 +51,42 @@ class CitasPacienteActivity : AppCompatActivity() {
         binding.bottomNavigationView.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
-                    val intent = Intent(this, HomePacienteActivity::class.java)
-                    startActivity(intent)
+                    startActivity(Intent(this, HomePacienteActivity::class.java))
+                    finish()
                     true
                 }
                 R.id.nav_calendar -> {
-                    startActivity(Intent(this, CitasPacienteActivity::class.java))
+                    true
+                }
+
+                R.id.nav_notifications -> {
+                    startActivity(Intent(this, NotificacionesActivity::class.java))
+                    finish()
                     true
                 }
                 R.id.nav_configuracion -> {
                     startActivity(Intent(this, ConfiguracionActivity::class.java))
+                    finish()
                     true
                 }
                 else -> false
             }
         }
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val db = FirebaseFirestore.getInstance()
+
+        db.collection("notificaciones")
+            .whereEqualTo("uid", uid)
+            .whereEqualTo("visto", false)
+            .get()
+            .addOnSuccessListener { result ->
+                if (!result.isEmpty) {
+                    val badge = binding.bottomNavigationView.getOrCreateBadge(R.id.nav_notifications)
+                    badge.isVisible = true
+                }
+            }
+
+
     }
 
     private fun setupTabs() {
@@ -137,10 +162,34 @@ class CitasPacienteActivity : AppCompatActivity() {
                         for (document in result) {
                             FirebaseFirestore.getInstance().collection("citas").document(document.id).delete()
                         }
+
+                        // Crear notificación para el paciente
+                        val horaSplit = cita.hora.split(" - ")
+                        val notificacion = NotificacionCita(
+                            mensaje = "Tu cita del ${cita.fecha} ha sido cancelada",
+                            horaInicio = horaSplit[0],
+                            horaFin = horaSplit[1]
+                        )
+                        notificacionesViewModel.agregarNotificacion(notificacion)
+
+                        // Crear notificación para el doctor
+                        val notificacionDoctor = mapOf(
+                            "uid" to cita.doctorId,
+                            "mensaje" to "Una cita del ${cita.fecha} ha sido cancelada por el paciente",
+                            "horaInicio" to horaSplit[0],
+                            "horaFin" to horaSplit[1],
+                            "timestamp" to System.currentTimeMillis()
+                        )
+                        FirebaseFirestore.getInstance()
+                            .collection("notificaciones")
+                            .add(notificacionDoctor)
+
                         Toast.makeText(this, "Cita cancelada", Toast.LENGTH_SHORT).show()
                         viewModel.cargarCitas()
                     }
+
             }
+
             binding.containerCitas.addView(view)
         }
     }
@@ -191,7 +240,6 @@ class CitasPacienteActivity : AppCompatActivity() {
             binding.containerCitas.addView(view)
         }
     }
-
 
 
     private fun showCalificarModal(view: View, doctorId: String) {

@@ -12,6 +12,7 @@ import com.example.prodent.databinding.ActivityHorarioBinding
 import com.example.prodent.databinding.AgregarHorarioBinding
 import com.example.prodent.viewmodel.HorarioViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import java.util.*
 
 class HorarioActivity : AppCompatActivity() {
@@ -69,20 +70,41 @@ class HorarioActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.nav_home -> {
                     startActivity(Intent(this, HomeDoctorActivity::class.java))
+                    finish()
                     true
                 }
                 R.id.nav_calendar -> {
-                    startActivity(Intent(this, HorarioActivity::class.java))
+                    true
+                }
+
+                R.id.nav_notifications -> {
+                    startActivity(Intent(this, NotificacionesActivity::class.java))
+                    finish()
                     true
                 }
 
                 R.id.nav_configuracion -> {
                     startActivity(Intent(this, ConfiguracionActivity::class.java))
+                    finish()
                     true
                 }
                 else -> false
             }
         }
+
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val db = FirebaseFirestore.getInstance()
+
+        db.collection("notificaciones")
+            .whereEqualTo("uid", uid)
+            .whereEqualTo("visto", false)
+            .get()
+            .addOnSuccessListener { result ->
+                if (!result.isEmpty) {
+                    val badge = binding.bottomNavigationView.getOrCreateBadge(R.id.nav_notifications)
+                    badge.isVisible = true
+                }
+            }
     }
 
     private fun mostrarDialogoAgregarHorario() {

@@ -39,19 +39,25 @@ class HomePacienteActivity : AppCompatActivity() {
         binding.bottomNavigationView.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
-                    val intent = Intent(this, HomePacienteActivity::class.java)
-                    startActivity(intent)
                     true
                 }
 
                 R.id.nav_calendar -> {
                     startActivity(Intent(this, CitasPacienteActivity::class.java))
+                    finish()
+                    true
+                }
+
+                R.id.nav_notifications -> {
+                    startActivity(Intent(this, NotificacionesActivity::class.java))
+                    finish()
                     true
                 }
 
 
                 R.id.nav_configuracion -> {
                     startActivity(Intent(this, ConfiguracionActivity::class.java))
+                    finish()
                     true
                 }
 
@@ -59,9 +65,24 @@ class HomePacienteActivity : AppCompatActivity() {
             }
         }
 
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val db = FirebaseFirestore.getInstance()
+
+        db.collection("notificaciones")
+            .whereEqualTo("uid", uid)
+            .whereEqualTo("visto", false)
+            .get()
+            .addOnSuccessListener { result ->
+                if (!result.isEmpty) {
+                    val badge = binding.bottomNavigationView.getOrCreateBadge(R.id.nav_notifications)
+                    badge.isVisible = true
+                }
             }
 
+    }
 
-        }
+
+
+}
 
 

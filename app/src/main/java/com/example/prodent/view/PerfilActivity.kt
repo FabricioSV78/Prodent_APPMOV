@@ -49,9 +49,7 @@ class PerfilActivity : AppCompatActivity() {
 
         }
 
-        fun isPhoneValid(phone: String): Boolean {
-            return phone.matches(Regex("^9\\d{8}$"))
-        }
+
 
         binding.btnGuardar.setOnClickListener {
             val nombre = binding.etNombre.text.toString().trim()
@@ -164,6 +162,10 @@ class PerfilActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    fun isPhoneValid(phone: String): Boolean {
+        return phone.matches(Regex("^9\\d{8}$"))
     }
 
 }

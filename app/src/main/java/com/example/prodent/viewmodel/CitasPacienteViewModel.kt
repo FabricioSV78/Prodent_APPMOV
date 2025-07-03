@@ -29,16 +29,35 @@ class CitasPacienteViewModel : ViewModel() {
             .whereEqualTo("paciente", pacienteId)
             .get()
             .addOnSuccessListener { result ->
-                val hoy = Calendar.getInstance()
-                val formato = SimpleDateFormat("d/M/yyyy", Locale.getDefault())
+                val zonaPeru = TimeZone.getTimeZone("America/Lima")
+                val ahora = Calendar.getInstance(zonaPeru).time
+
+                // Formato que incluya la hora
+                val formato = SimpleDateFormat("d/M/yyyy hh:mm a", Locale.getDefault())
+                formato.timeZone = zonaPeru
 
                 val pendientes = mutableListOf<Cita>()
                 val pasadas = mutableListOf<Cita>()
 
                 for (doc in result) {
                     val cita = doc.toObject(Cita::class.java)
-                    val fechaCita = formato.parse(cita.fecha)
-                    if (fechaCita != null && fechaCita.before(hoy.time)) {
+
+                    // Separar la hora de inicio
+                    val horaInicio = try {
+                        cita.hora.split(" - ")[0].trim()
+                    } catch (e: Exception) {
+                        "12:00 AM" // Valor por defecto si algo falla
+                    }
+
+                    // Combinar fecha y hora
+                    val fechaHora = try {
+                        formato.parse("${cita.fecha} $horaInicio")
+                    } catch (e: Exception) {
+                        null
+                    }
+
+                    // Clasificar según fecha y hora
+                    if (fechaHora != null && fechaHora.before(ahora)) {
                         pasadas.add(cita)
                     } else {
                         pendientes.add(cita)
@@ -50,6 +69,8 @@ class CitasPacienteViewModel : ViewModel() {
                 cargarCalificaciones(pacienteId)
             }
     }
+
+
 
     private fun cargarCalificaciones(pacienteId: String) {
         db.collection("calificaciones_doctor")

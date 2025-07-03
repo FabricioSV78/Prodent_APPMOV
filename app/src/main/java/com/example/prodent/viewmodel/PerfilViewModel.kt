@@ -87,7 +87,4 @@ class PerfilViewModel : ViewModel() {
             .addOnSuccessListener { onResult("Foto actualizada con éxito") }
             .addOnFailureListener { onResult("Error al guardar la foto") }
     }
-
-
-
 }

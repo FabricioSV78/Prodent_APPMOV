@@ -22,6 +22,7 @@
         <activity android:name=".view.CitasPacienteActivity" />
         <activity android:name=".view.MapaActivity" />
         <activity android:name=".view.NotificacionesActivity" />
+        <activity android:name=".view.IndicacionesActivity" />
         <activity
             android:name=".view.LoginActivity"
             android:exported="true"

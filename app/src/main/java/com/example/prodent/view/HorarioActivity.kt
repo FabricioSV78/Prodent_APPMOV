@@ -31,15 +31,16 @@ class HorarioActivity : AppCompatActivity() {
         binding.bottomNavigationView.selectedItemId = R.id.nav_calendar
 
 
-        val hoy = Calendar.getInstance()
+        val hoy = Calendar.getInstance(TimeZone.getTimeZone("America/Lima"))
         diaSeleccionado = formatearFecha(hoy)
         actualizarResumen(diaSeleccionado)
         viewModel.cargarHorariosPorFecha(doctorId, diaSeleccionado)
 
         binding.calendarView.setOnDateChangeListener { _, year, month, dayOfMonth ->
-            val calendar = Calendar.getInstance().apply {
+            val calendar = Calendar.getInstance(TimeZone.getTimeZone("America/Lima")).apply {
                 set(year, month, dayOfMonth)
             }
+
             diaSeleccionado = formatearFecha(calendar)
             actualizarResumen(diaSeleccionado)
             viewModel.cargarHorariosPorFecha(doctorId, diaSeleccionado)

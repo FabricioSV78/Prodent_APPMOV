@@ -16,6 +16,9 @@ import android.graphics.Color
 import android.view.Gravity
 import com.example.prodent.databinding.ActivityHomedoctorBinding
 import com.google.firebase.firestore.FirebaseFirestore
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 
 class HomeDoctorActivity : AppCompatActivity() {
@@ -44,20 +47,15 @@ class HomeDoctorActivity : AppCompatActivity() {
                 }
                 binding.contenedorCitas.addView(mensaje)
             } else {
-                val formato = java.text.SimpleDateFormat("d/M/yyyy HH:mm", java.util.Locale.getDefault())
-                val ahora = java.util.Calendar.getInstance().time
+                val formato = SimpleDateFormat("d/M/yyyy HH:mm", Locale.getDefault())
+                formato.timeZone = TimeZone.getTimeZone("America/Lima")
+
+                val ahora = Calendar.getInstance(TimeZone.getTimeZone("America/Lima")).time
 
                 citas.forEach { cita ->
-                    try {
-                        val horaInicio = cita.hora.split(" - ")[0]
-                        val fechaHora = formato.parse("${cita.fecha} $horaInicio")
-                        if (fechaHora != null && fechaHora.after(ahora)) {
-                            agregarCitaUI(cita)
-                        }
-                    } catch (e: Exception) {
-                        agregarCitaUI(cita)
-                    }
+                    agregarCitaUI(cita)
                 }
+
             }
 
         })
@@ -161,5 +159,17 @@ class HomeDoctorActivity : AppCompatActivity() {
             }
 
         binding.contenedorCitas.addView(tarjeta)
+
+        tarjeta.setOnClickListener {
+            val intent = Intent(this, IndicacionesActivity::class.java).apply {
+                putExtra("pacienteId", cita.paciente)
+                putExtra("fecha", cita.fecha)
+                putExtra("hora", cita.hora)
+                putExtra("doctorId", cita.doctorId)
+                putExtra("pacienteNombre", tvPaciente.text.toString())
+            }
+            startActivity(intent)
+        }
+
     }
 }

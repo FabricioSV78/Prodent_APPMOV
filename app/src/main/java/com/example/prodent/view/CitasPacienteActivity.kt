@@ -110,8 +110,12 @@ class CitasPacienteActivity : AppCompatActivity() {
     }
 
     private fun showCitasPasadas() {
-        viewModel.citasPasadas.value?.let { renderCitasPasadas(it) }
+        renderCitasPasadas(
+            viewModel.citasPasadas.value ?: emptyList(),
+            viewModel.calificaciones.value ?: emptyMap()
+        )
     }
+
 
     private fun observeViewModel() {
         viewModel.citasPendientes.observe(this) {
@@ -119,15 +123,35 @@ class CitasPacienteActivity : AppCompatActivity() {
                 renderCitasPendientes(it)
             }
         }
-        viewModel.citasPasadas.observe(this) {
+        viewModel.citasPasadas.observe(this) { citas ->
             if (binding.tabLayout.selectedTabPosition == 1) {
-                renderCitasPasadas(it)
+                // Siempre que llegan citas pasadas, las pintamos con las calificaciones actuales
+                renderCitasPasadas(citas, viewModel.calificaciones.value ?: emptyMap())
+            }
+        }
+        viewModel.calificaciones.observe(this) {
+            if (binding.tabLayout.selectedTabPosition == 1) {
+                viewModel.cargarCitas()
+            }
+        }
+        viewModel.citaSeleccionada.observe(this) { cita ->
+            if (cita != null) {
+                mostrarIndicacionesDialog(cita)
+                viewModel.seleccionarCitaParaVerIndicaciones(null)
             }
         }
     }
 
+
+
     private fun renderCitasPendientes(citas: List<Cita>) {
         binding.containerCitas.removeAllViews()
+
+        if (citas.isEmpty()) {
+            agregarMensaje("No tienes citas pendientes")
+            return
+        }
+
         citas.forEach { cita ->
             val view = layoutInflater.inflate(R.layout.item_cita_paciente_pendiente, binding.containerCitas, false)
 
@@ -195,8 +219,7 @@ class CitasPacienteActivity : AppCompatActivity() {
     }
 
 
-
-    private fun renderCitasPasadas(citas: List<Cita>) {
+    private fun renderCitasPasadas(citas: List<Cita>, calificaciones: Map<String, Double>) {
         binding.containerCitas.removeAllViews()
 
         if (citas.isEmpty()) {
@@ -209,6 +232,29 @@ class CitasPacienteActivity : AppCompatActivity() {
             view.findViewById<TextView>(R.id.tvFechaCita).text = cita.fecha
             view.findViewById<TextView>(R.id.tvHoraCita).text = cita.hora
 
+            // Mostrar calificación según el mapa recibido
+            val calificacion = calificaciones[cita.doctorId] ?: 0.0
+            if (calificacion > 0) {
+                view.findViewById<TextView>(R.id.btnCalificar).visibility = View.GONE
+                view.findViewById<LinearLayout>(R.id.llCalificacion).visibility = View.VISIBLE
+                view.findViewById<TextView>(R.id.tvCalificacion).text = "$calificacion ★"
+            } else {
+                view.findViewById<TextView>(R.id.btnCalificar).visibility = View.VISIBLE
+                view.findViewById<LinearLayout>(R.id.llCalificacion).visibility = View.GONE
+            }
+
+            view.findViewById<TextView>(R.id.btnCalificar).setOnClickListener {
+                showCalificarModal(view, cita.doctorId)
+            }
+
+            val btnVerIndicaciones = view.findViewById<Button>(R.id.btnVerIndicaciones)
+            btnVerIndicaciones.setOnClickListener {
+                viewModel.seleccionarCitaParaVerIndicaciones(cita)
+            }
+
+            // Añade la vista antes de las consultas Firestore
+            binding.containerCitas.addView(view)
+
             firestore.collection("usuarios").document(cita.doctorId)
                 .get()
                 .addOnSuccessListener { doc ->
@@ -219,27 +265,10 @@ class CitasPacienteActivity : AppCompatActivity() {
                 .addOnFailureListener {
                     view.findViewById<TextView>(R.id.tvDoctorCita).text = "Doctor"
                 }
-
-            // Aquí usamos el LiveData para observar las calificaciones
-            viewModel.calificaciones.observe(this, Observer { calificaciones ->
-                val calificacion = calificaciones[cita.doctorId] ?: 0.0
-                if (calificacion > 0) {
-                    view.findViewById<TextView>(R.id.btnCalificar).visibility = View.GONE
-                    view.findViewById<LinearLayout>(R.id.llCalificacion).visibility = View.VISIBLE
-                    view.findViewById<TextView>(R.id.tvCalificacion).text = "$calificacion ★"
-                } else {
-                    view.findViewById<TextView>(R.id.btnCalificar).visibility = View.VISIBLE
-                    view.findViewById<LinearLayout>(R.id.llCalificacion).visibility = View.GONE
-                }
-            })
-
-            view.findViewById<TextView>(R.id.btnCalificar).setOnClickListener {
-                showCalificarModal(view, cita.doctorId)
-            }
-
-            binding.containerCitas.addView(view)
         }
     }
+
+
 
 
     private fun showCalificarModal(view: View, doctorId: String) {
@@ -310,4 +339,22 @@ class CitasPacienteActivity : AppCompatActivity() {
             startActivity(Intent(this, RegistrarCitaActivity::class.java))
         }
     }
+
+    private fun mostrarIndicacionesDialog(cita: Cita) {
+        val mensaje = """
+        Medicamentos:
+        ${cita.indicacionesMedicamentos.ifBlank { "Sin indicaciones" }}
+
+        Cuidados:
+        ${cita.indicacionesCuidados.ifBlank { "Sin indicaciones" }}
+    """.trimIndent()
+
+        AlertDialog.Builder(this)
+            .setTitle("Indicaciones médicas")
+            .setMessage(mensaje)
+            .setPositiveButton("Cerrar", null)
+            .create()
+            .show()
+    }
+
 }

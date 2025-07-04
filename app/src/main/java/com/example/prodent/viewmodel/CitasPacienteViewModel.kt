@@ -23,6 +23,14 @@ class CitasPacienteViewModel : ViewModel() {
     private val _calificaciones = MutableLiveData<Map<String, Double>>()
     val calificaciones: LiveData<Map<String, Double>> = _calificaciones
 
+    private val _citaSeleccionada = MutableLiveData<Cita?>()
+    val citaSeleccionada: LiveData<Cita?> = _citaSeleccionada
+
+    fun seleccionarCitaParaVerIndicaciones(cita: Cita?) {
+        _citaSeleccionada.value = cita
+    }
+
+
     fun cargarCitas() {
         val pacienteId = auth.currentUser?.uid ?: return
         db.collection("citas")
@@ -57,7 +65,7 @@ class CitasPacienteViewModel : ViewModel() {
                     }
 
                     // Clasificar según fecha y hora
-                    if (fechaHora != null && fechaHora.before(ahora)) {
+                    if (cita.estado == "atendida" || (fechaHora != null && fechaHora.before(ahora))) {
                         pasadas.add(cita)
                     } else {
                         pendientes.add(cita)

@@ -1,10 +1,10 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="@android:color/white">
 
-    <LinearLayout
+<LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -16,6 +16,7 @@
         android:elevation="4dp"
         android:gravity="center_vertical">
 
+        <!-- Columna izquierda con info de la cita -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -41,22 +42,40 @@
                 android:text="" />
         </LinearLayout>
 
-        <!-- Este botón se usará para calificar -->
-        <Button
-            android:id="@+id/btnCalificar"
+        <!-- Columna derecha: botones uno encima del otro -->
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="CALIFICAR"
-            android:backgroundTint="#2A6863"
-            android:textColor="@android:color/white" />
+            android:orientation="vertical"
+            android:gravity="end">
 
-        <!-- Este será el lugar para mostrar la calificación cuando ya se haya calificado -->
+            <Button
+                android:id="@+id/btnCalificar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Calificar"
+                android:backgroundTint="#2A6863"
+                android:textColor="@android:color/white"
+                android:layout_marginBottom="4dp"
+                android:layout_marginRight="30dp"/>
+
+            <Button
+                android:id="@+id/btnVerIndicaciones"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ver indicaciones"
+                android:backgroundTint="#2A6863"
+                android:textColor="@android:color/white"/>
+        </LinearLayout>
+
+        <!-- Este es el layout de calificación, si aplica -->
         <LinearLayout
             android:id="@+id/llCalificacion"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:visibility="gone">
+            android:visibility="gone"
+            android:layout_marginStart="8dp">
 
             <TextView
                 android:id="@+id/tvCalificacion"

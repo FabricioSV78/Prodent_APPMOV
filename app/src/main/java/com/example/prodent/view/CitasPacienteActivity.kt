@@ -58,7 +58,6 @@ class CitasPacienteActivity : AppCompatActivity() {
                 R.id.nav_calendar -> {
                     true
                 }
-
                 R.id.nav_notifications -> {
                     startActivity(Intent(this, NotificacionesActivity::class.java))
                     finish()
@@ -72,10 +71,9 @@ class CitasPacienteActivity : AppCompatActivity() {
                 else -> false
             }
         }
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val db = FirebaseFirestore.getInstance()
 
-        db.collection("notificaciones")
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        firestore.collection("notificaciones")
             .whereEqualTo("uid", uid)
             .whereEqualTo("visto", false)
             .get()
@@ -85,8 +83,6 @@ class CitasPacienteActivity : AppCompatActivity() {
                     badge.isVisible = true
                 }
             }
-
-
     }
 
     private fun setupTabs() {
@@ -99,7 +95,6 @@ class CitasPacienteActivity : AppCompatActivity() {
                     1 -> showCitasPasadas()
                 }
             }
-
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
@@ -116,7 +111,6 @@ class CitasPacienteActivity : AppCompatActivity() {
         )
     }
 
-
     private fun observeViewModel() {
         viewModel.citasPendientes.observe(this) {
             if (binding.tabLayout.selectedTabPosition == 0) {
@@ -125,15 +119,10 @@ class CitasPacienteActivity : AppCompatActivity() {
         }
         viewModel.citasPasadas.observe(this) { citas ->
             if (binding.tabLayout.selectedTabPosition == 1) {
-                // Siempre que llegan citas pasadas, las pintamos con las calificaciones actuales
                 renderCitasPasadas(citas, viewModel.calificaciones.value ?: emptyMap())
             }
         }
-        viewModel.calificaciones.observe(this) {
-            if (binding.tabLayout.selectedTabPosition == 1) {
-                viewModel.cargarCitas()
-            }
-        }
+
         viewModel.citaSeleccionada.observe(this) { cita ->
             if (cita != null) {
                 mostrarIndicacionesDialog(cita)
@@ -141,8 +130,6 @@ class CitasPacienteActivity : AppCompatActivity() {
             }
         }
     }
-
-
 
     private fun renderCitasPendientes(citas: List<Cita>) {
         binding.containerCitas.removeAllViews()
@@ -163,61 +150,26 @@ class CitasPacienteActivity : AppCompatActivity() {
             tvFechaCita.text = cita.fecha
             tvHoraCita.text = cita.hora
 
-            FirebaseFirestore.getInstance()
-                .collection("usuarios")
+            // Cargar nombre del doctor
+            firestore.collection("usuarios")
                 .document(cita.doctorId)
                 .get()
                 .addOnSuccessListener { doc ->
-                    val nombre = doc.getString("nombre") ?: ""
-                    tvDoctorCita.text = "$nombre"
+                    val nombre = doc.getString("nombre") ?: "Nombre no disponible"
+                    val apellido = doc.getString("apellido") ?: ""
+                    tvDoctorCita.text = "Dr. $nombre $apellido"
                 }
                 .addOnFailureListener {
-                    tvDoctorCita.text = "Nombre no disponible"
+                    tvDoctorCita.text = "Doctor no disponible"
                 }
 
             btnCancelar.setOnClickListener {
-                FirebaseFirestore.getInstance().collection("citas")
-                    .whereEqualTo("paciente", cita.paciente)
-                    .whereEqualTo("fecha", cita.fecha)
-                    .whereEqualTo("hora", cita.hora)
-                    .whereEqualTo("doctorId", cita.doctorId)
-                    .get()
-                    .addOnSuccessListener { result ->
-                        for (document in result) {
-                            FirebaseFirestore.getInstance().collection("citas").document(document.id).delete()
-                        }
-
-                        // Crear notificación para el paciente
-                        val horaSplit = cita.hora.split(" - ")
-                        val notificacion = NotificacionCita(
-                            mensaje = "Tu cita del ${cita.fecha} ha sido cancelada",
-                            horaInicio = horaSplit[0],
-                            horaFin = horaSplit[1]
-                        )
-                        notificacionesViewModel.agregarNotificacion(notificacion)
-
-                        // Crear notificación para el doctor
-                        val notificacionDoctor = mapOf(
-                            "uid" to cita.doctorId,
-                            "mensaje" to "Una cita del ${cita.fecha} ha sido cancelada por el paciente",
-                            "horaInicio" to horaSplit[0],
-                            "horaFin" to horaSplit[1],
-                            "timestamp" to System.currentTimeMillis()
-                        )
-                        FirebaseFirestore.getInstance()
-                            .collection("notificaciones")
-                            .add(notificacionDoctor)
-
-                        Toast.makeText(this, "Cita cancelada", Toast.LENGTH_SHORT).show()
-                        viewModel.cargarCitas()
-                    }
-
+                cancelarCita(cita)
             }
 
             binding.containerCitas.addView(view)
         }
     }
-
 
     private fun renderCitasPasadas(citas: List<Cita>, calificaciones: Map<String, Double>) {
         binding.containerCitas.removeAllViews()
@@ -227,56 +179,104 @@ class CitasPacienteActivity : AppCompatActivity() {
             return
         }
 
-        for (cita in citas) {
+        citas.forEach { cita ->
             val view = LayoutInflater.from(this).inflate(R.layout.item_cita_paciente_pasada, binding.containerCitas, false)
+
             view.findViewById<TextView>(R.id.tvFechaCita).text = cita.fecha
             view.findViewById<TextView>(R.id.tvHoraCita).text = cita.hora
 
-            // Mostrar calificación según el mapa recibido
-            val calificacion = calificaciones[cita.doctorId] ?: 0.0
-            if (calificacion > 0) {
-                view.findViewById<TextView>(R.id.btnCalificar).visibility = View.GONE
-                view.findViewById<LinearLayout>(R.id.llCalificacion).visibility = View.VISIBLE
-                view.findViewById<TextView>(R.id.tvCalificacion).text = "$calificacion ★"
-            } else {
-                view.findViewById<TextView>(R.id.btnCalificar).visibility = View.VISIBLE
-                view.findViewById<LinearLayout>(R.id.llCalificacion).visibility = View.GONE
-            }
-
-            view.findViewById<TextView>(R.id.btnCalificar).setOnClickListener {
-                showCalificarModal(view, cita.doctorId)
-            }
-
-            val btnVerIndicaciones = view.findViewById<Button>(R.id.btnVerIndicaciones)
-            btnVerIndicaciones.setOnClickListener {
-                viewModel.seleccionarCitaParaVerIndicaciones(cita)
-            }
-
-            // Añade la vista antes de las consultas Firestore
-            binding.containerCitas.addView(view)
-
-            firestore.collection("usuarios").document(cita.doctorId)
+            // Cargar nombre del doctor
+            firestore.collection("usuarios")
+                .document(cita.doctorId)
                 .get()
                 .addOnSuccessListener { doc ->
-                    val nombre = doc.getString("nombre") ?: ""
-                    val nombreCompleto = "Dr. $nombre"
-                    view.findViewById<TextView>(R.id.tvDoctorCita).text = nombreCompleto
+                    val nombre = doc.getString("nombre") ?: "Doctor"
+                    val apellido = doc.getString("apellido") ?: ""
+                    view.findViewById<TextView>(R.id.tvDoctorCita).text = "Dr. $nombre $apellido"
                 }
                 .addOnFailureListener {
                     view.findViewById<TextView>(R.id.tvDoctorCita).text = "Doctor"
                 }
+
+            // ✅ CONFIGURAR BOTÓN VER INDICACIONES
+            view.findViewById<Button>(R.id.btnVerIndicaciones)?.setOnClickListener {
+                mostrarIndicacionesDialog(cita)
+            }
+
+            // ✅ VERIFICAR SI YA EXISTE CALIFICACIÓN
+            verificarYMostrarCalificacion(view, cita)
+
+            binding.containerCitas.addView(view)
         }
     }
 
+    // ✅ NUEVA FUNCIÓN: Verificar si ya existe calificación
+    private fun verificarYMostrarCalificacion(view: View, cita: Cita) {
+        val pacienteId = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
+        android.util.Log.d("CitasPaciente", "🔍 Verificando calificación para doctor: ${cita.doctorId}")
 
+        firestore.collection("calificaciones")
+            .whereEqualTo("doctorId", cita.doctorId)
+            .whereEqualTo("pacienteId", pacienteId)
+            .get()
+            .addOnSuccessListener { result ->
+                if (!result.isEmpty) {
+                    // Ya existe calificación
+                    val calificacion = result.documents[0].getDouble("calificacion") ?: 0.0
+                    android.util.Log.d("CitasPaciente", "✅ Calificación encontrada: $calificacion")
+                    mostrarCalificacionExistente(view, calificacion)
+                } else {
+                    // No existe calificación, mostrar botón
+                    android.util.Log.d("CitasPaciente", "❌ Sin calificación, mostrando botón")
+                    mostrarBotonCalificar(view, cita)
+                }
+            }
+            .addOnFailureListener { exception ->
+                android.util.Log.e("CitasPaciente", "Error al verificar calificación", exception)
+                mostrarBotonCalificar(view, cita)
+            }
+    }
 
+    // ✅ NUEVA FUNCIÓN: Mostrar calificación existente
+    private fun mostrarCalificacionExistente(view: View, calificacion: Double) {
+        // Ocultar botón de calificar
+        view.findViewById<Button>(R.id.btnCalificar)?.visibility = View.GONE
+
+        // Mostrar la calificación en el área de información
+        val llCalificacion = view.findViewById<LinearLayout>(R.id.llCalificacion)
+        val tvCalificacion = view.findViewById<TextView>(R.id.tvCalificacion)
+
+        llCalificacion?.visibility = View.VISIBLE
+        tvCalificacion?.text = String.format("%.1f ⭐", calificacion)
+
+        // ✅ SOLO LOG UNA VEZ, NO EN BUCLE:
+        // android.util.Log.d("CitasPaciente", "Mostrando calificación existente: $calificacion")
+    }
+
+    // ✅ NUEVA FUNCIÓN: Mostrar botón calificar
+    private fun mostrarBotonCalificar(view: View, cita: Cita) {
+        // Mostrar botón de calificar
+        val btnCalificar = view.findViewById<Button>(R.id.btnCalificar)
+        btnCalificar?.visibility = View.VISIBLE
+
+        // Ocultar calificación
+        view.findViewById<LinearLayout>(R.id.llCalificacion)?.visibility = View.GONE
+
+        // Configurar click del botón
+        btnCalificar?.setOnClickListener {
+            android.util.Log.d("CitasPaciente", "Abriendo modal para calificar doctor: ${cita.doctorId}")
+            showCalificarModal(view, cita.doctorId)
+        }
+
+        android.util.Log.d("CitasPaciente", "Mostrando botón calificar para doctor: ${cita.doctorId}")
+    }
+
+    // ✅ FUNCIÓN CORREGIDA: Modal de calificación
     private fun showCalificarModal(view: View, doctorId: String) {
-        // Crear el AlertDialog para calificar al doctor
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Calificar al Doctor")
 
-        // Inflar el layout del modal
         val modalView = layoutInflater.inflate(R.layout.modal_calificar, null)
         builder.setView(modalView)
 
@@ -284,16 +284,20 @@ class CitasPacienteActivity : AppCompatActivity() {
         val comentarioEditText = modalView.findViewById<EditText>(R.id.etComentario)
         val btnEnviarCalificacion = modalView.findViewById<Button>(R.id.btnEnviarCalificacion)
 
-        // Mostrar el AlertDialog
         val dialog = builder.create()
         dialog.show()
 
-        // Acción al presionar el botón de enviar calificación en el modal
         btnEnviarCalificacion.setOnClickListener {
             val calificacion = ratingBar.rating.toDouble()
-            val comentario = comentarioEditText.text.toString()
+
+            if (calificacion == 0.0) {
+                Toast.makeText(this, "Por favor selecciona una calificación", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val comentario = comentarioEditText.text.toString().trim()
             val pacienteId = FirebaseAuth.getInstance().currentUser?.uid
-            val fechaActual = SimpleDateFormat("d/M/yyyy", Locale.getDefault()).format(Date())
+            val fechaActual = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
 
             if (doctorId.isNotEmpty() && pacienteId != null) {
                 val calificacionDoctor = CalificacionDoctor(
@@ -301,29 +305,67 @@ class CitasPacienteActivity : AppCompatActivity() {
                     pacienteId = pacienteId,
                     calificacion = calificacion,
                     comentario = comentario,
-                    fecha = fechaActual
+                    fecha = fechaActual,
+                    calificado = true
                 )
 
-                firestore.collection("calificaciones_doctor")
+                firestore.collection("calificaciones")
                     .add(calificacionDoctor)
-                    .addOnSuccessListener {
-                        Toast.makeText(this, "Calificación guardada con éxito", Toast.LENGTH_SHORT).show()
-                        // Reemplazar el botón de calificación por la calificación y mostrar las estrellas
-                        view.findViewById<TextView>(R.id.btnCalificar).visibility = View.GONE
-                        view.findViewById<LinearLayout>(R.id.llCalificacion).visibility = View.VISIBLE
+                    .addOnSuccessListener { documentReference ->
+                        Toast.makeText(this, "¡Gracias por tu calificación!", Toast.LENGTH_SHORT).show()
 
-                        view.findViewById<TextView>(R.id.tvCalificacion).text = "$calificacion ★"
-                        dialog.dismiss()  // Cerrar el modal después de guardar
+                        // ✅ SOLO ACTUALIZAR LA VISTA ESPECÍFICA, NO RECARGAR TODO
+                        mostrarCalificacionExistente(view, calificacion)
+
+                        dialog.dismiss()
+
+                        // ✅ ELIMINAR ESTA LÍNEA QUE CAUSA EL BUCLE:
+                        // viewModel.cargarCitas() // ← NO HACER ESTO
                     }
-                    .addOnFailureListener {
+                    .addOnFailureListener { exception ->
                         Toast.makeText(this, "Error al guardar la calificación", Toast.LENGTH_SHORT).show()
+                        android.util.Log.e("CalificacionError", "Error", exception)
                     }
             } else {
-                Toast.makeText(this, "Error al obtener los datos del doctor", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Error al obtener los datos", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    private fun cancelarCita(cita: Cita) {
+        firestore.collection("citas")
+            .whereEqualTo("paciente", cita.paciente)
+            .whereEqualTo("fecha", cita.fecha)
+            .whereEqualTo("hora", cita.hora)
+            .whereEqualTo("doctorId", cita.doctorId)
+            .get()
+            .addOnSuccessListener { result ->
+                for (document in result) {
+                    firestore.collection("citas").document(document.id).delete()
+                }
+
+                // Crear notificaciones
+                val horaSplit = cita.hora.split(" - ")
+                val notificacion = NotificacionCita(
+                    mensaje = "Tu cita del ${cita.fecha} ha sido cancelada",
+                    horaInicio = horaSplit[0],
+                    horaFin = horaSplit[1]
+                )
+                notificacionesViewModel.agregarNotificacion(notificacion)
+
+                val notificacionDoctor = mapOf(
+                    "uid" to cita.doctorId,
+                    "mensaje" to "Una cita del ${cita.fecha} ha sido cancelada por el paciente",
+                    "horaInicio" to horaSplit[0],
+                    "horaFin" to horaSplit[1],
+                    "timestamp" to System.currentTimeMillis()
+                )
+                firestore.collection("notificaciones").add(notificacionDoctor)
+
+                Toast.makeText(this, "Cita cancelada", Toast.LENGTH_SHORT).show()
+                viewModel.cargarCitas()
+            }
+    }
 
     private fun agregarMensaje(mensaje: String) {
         val textView = TextView(this).apply {
@@ -356,5 +398,4 @@ class CitasPacienteActivity : AppCompatActivity() {
             .create()
             .show()
     }
-
 }

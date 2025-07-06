@@ -9,5 +9,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="verde_principal">#2A6863</color>
     <color name="gris_claro">#D0E0DF</color>
-
+    <color name="colorPrimary">#6200EE</color>
 </resources>

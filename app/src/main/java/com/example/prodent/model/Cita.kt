@@ -7,5 +7,7 @@ data class Cita(
     val estado: String = "",
     val doctorId: String = "",
     val indicacionesMedicamentos: String = "",
-    val indicacionesCuidados: String = ""
+    val indicacionesCuidados: String = "",
+    val puedeCalificar: Boolean = false,
+    val calificacionId: String = ""
 )

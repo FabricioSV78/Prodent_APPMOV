@@ -6,5 +6,6 @@ data class Doctor(
     val usuarioId: String = "",
     val especialidad: String = "",
     val nombre: String = "",
-    val apellido: String = ""
+    val apellido: String = "",
+    val calificacionPromedio: Double = 0.0,
 )

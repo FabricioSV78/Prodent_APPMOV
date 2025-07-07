@@ -12,6 +12,7 @@ material = "1.12.0"
 googleGmsGoogleServices = "4.4.2"
 firebaseFirestore = "25.1.4"
 firebaseAuth = "23.2.0"
+materialVersion = "1.7.0"
 recyclerview = "1.4.0"
 
 [libraries]
@@ -34,6 +35,7 @@ material = { module = "com.google.android.material:material", version.ref = "mat
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuth" }
 androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
+material-v170 = { module = "com.google.android.material:material", version.ref = "materialVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

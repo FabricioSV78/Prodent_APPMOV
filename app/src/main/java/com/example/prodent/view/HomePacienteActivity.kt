@@ -11,6 +11,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.Observer
 import com.example.prodent.R
 import com.example.prodent.databinding.ActivityHomedoctorBinding
@@ -22,6 +23,8 @@ import com.getkeepsafe.taptargetview.TapTargetSequence
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import java.util.Timer
+import java.util.TimerTask
 import kotlin.getValue
 
 class HomePacienteActivity : AppCompatActivity() {
@@ -29,19 +32,24 @@ class HomePacienteActivity : AppCompatActivity() {
     private lateinit var binding: ActivityHomepacienteBinding
     private lateinit var sharedPref: SharedPreferences
     private val viewModel: CitaViewModel by viewModels()
+    private lateinit var consejoTextView: TextView
+    private val consejosSalud = listOf(
+        "Cambia tu cepillo dental cada 3 meses",
+        "Cepíllate los dientes al menos 2 veces al día",
+        "Usa hilo dental diariamente",
+        "Visita al dentista cada 6 meses para una limpieza",
+        "Reduce el consumo de azúcares para prevenir caries",
+        "Usa enjuague bucal para complementar tu higiene",
+        "No olvides cepillar también tu lengua",
+        "Masajea tus encías suavemente para mejorar la circulación"
+    )
+    private var consejoTimer: Timer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityHomepacienteBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        sharedPref = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        val isFirstTime = sharedPref.getBoolean("isFirstTime", true)
-        if (isFirstTime) {
-            mostrarConsejoSalud()
-            sharedPref.edit().putBoolean("isFirstTime", false).apply()
-        }
-
+        consejoTextView = binding.tvConsejoSalud
         binding.bottomNavigationView.selectedItemId = R.id.nav_home
 
         binding.mapaLayout.setOnClickListener {
@@ -104,19 +112,30 @@ class HomePacienteActivity : AppCompatActivity() {
             editor.putBoolean("first_login_${uid}", false)
             editor.apply()
         }
+        mostrarConsejoAleatorio()
+        iniciarTimerConsejos()
 
     }
-    private fun mostrarConsejoSalud() {
-        val consejoDialog = ConsejoSaludActivity()
-        consejoDialog.show(supportFragmentManager, "ConsejoSalud")
+
+    private fun mostrarConsejoAleatorio() {
+        val consejoAleatorio = consejosSalud.random()
+        consejoTextView.text = consejoAleatorio
     }
 
-    // Resetear el flag cuando cierran sesión (opcional)
-    companion object {
-        fun resetFirstTimeFlag(context: Context) {
-            val sharedPref = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-            sharedPref.edit().putBoolean("isFirstTime", true).apply()
-        }
+    private fun iniciarTimerConsejos() {
+        consejoTimer = Timer()
+        consejoTimer?.scheduleAtFixedRate(object : TimerTask() {
+            override fun run() {
+                runOnUiThread {
+                    mostrarConsejoAleatorio()
+                }
+            }
+        }, 10000, 10000) // 10 segundos
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        consejoTimer?.cancel()
     }
 
     private var secuenciaGuia: TapTargetSequence? = null

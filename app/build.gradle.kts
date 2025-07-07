@@ -62,7 +62,7 @@ dependencies {
     //nuevas
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)
-    implementation("com.google.android.material:material:1.7.0")
+    implementation(libs.material.v170)
     implementation ("androidx.cardview:cardview:1.0.0")
     implementation ("androidx.recyclerview:recyclerview:1.2.1")
     annotationProcessor ("com.github.bumptech.glide:compiler:4.12.0")

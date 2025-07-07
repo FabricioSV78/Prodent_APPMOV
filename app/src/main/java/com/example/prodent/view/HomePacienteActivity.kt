@@ -1,7 +1,9 @@
 package com.example.prodent.view
 
 import android.app.DatePickerDialog
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
@@ -21,12 +23,20 @@ import kotlin.getValue
 class HomePacienteActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityHomepacienteBinding
+    private lateinit var sharedPref: SharedPreferences
     private val viewModel: CitaViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityHomepacienteBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        sharedPref = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        val isFirstTime = sharedPref.getBoolean("isFirstTime", true)
+        if (isFirstTime) {
+            mostrarConsejoSalud()
+            sharedPref.edit().putBoolean("isFirstTime", false).apply()
+        }
 
         binding.bottomNavigationView.selectedItemId = R.id.nav_home
 
@@ -79,6 +89,18 @@ class HomePacienteActivity : AppCompatActivity() {
                 }
             }
 
+    }
+    private fun mostrarConsejoSalud() {
+        val consejoDialog = ConsejoSaludActivity()
+        consejoDialog.show(supportFragmentManager, "ConsejoSalud")
+    }
+
+    // Resetear el flag cuando cierran sesión (opcional)
+    companion object {
+        fun resetFirstTimeFlag(context: Context) {
+            val sharedPref = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+            sharedPref.edit().putBoolean("isFirstTime", true).apply()
+        }
     }
 
 

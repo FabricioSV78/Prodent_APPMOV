@@ -138,7 +138,6 @@ class PerfilDoctorBottomSheetFragment : BottomSheetDialogFragment() {
                             binding.imgDoctorPerfil.setImageResource(R.drawable.ic_default_doctor)
                         }
 
-                        // Mostrar solo email
                         val email = correo ?: "No disponible"
                         binding.tvEmailDoctor.text = email
                     } else {

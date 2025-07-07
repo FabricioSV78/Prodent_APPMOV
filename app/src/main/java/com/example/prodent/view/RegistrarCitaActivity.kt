@@ -55,14 +55,13 @@ class RegistrarCitaActivity : AppCompatActivity() {
         binding = ActivityRegistrarCitaBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // ✅ Vincular las vistas con IDs correctos
         layoutListaDoctores = findViewById(R.id.layoutListaDoctores)
         layoutRegistroCita = findViewById<ScrollView>(R.id.layoutRegistroCita)
         recyclerViewDoctores = findViewById(R.id.recyclerViewDoctores)
-        doctorName = findViewById(R.id.doctorName) // Asegúrate que este ID existe en tu layout de registro de cita
-        doctorSpecialty = findViewById(R.id.tvDoctorSpecialty) // Asegúrate que este ID existe
-        doctorRating = findViewById(R.id.tvRatingNumber) // Asegúrate que este ID existe
-        doctorImage = findViewById(R.id.imgDoctor) // Asegúrate que este ID existe
+        doctorName = findViewById(R.id.doctorName)
+        doctorSpecialty = findViewById(R.id.tvDoctorSpecialty)
+        doctorRating = findViewById(R.id.tvRatingNumber)
+        doctorImage = findViewById(R.id.imgDoctor)
         calendarView = findViewById(R.id.calendarView)
         btnReservar = findViewById(R.id.btnReservar)
         layoutChips = findViewById(R.id.layoutChips)
@@ -74,13 +73,10 @@ class RegistrarCitaActivity : AppCompatActivity() {
         recyclerViewDoctores.layoutManager = LinearLayoutManager(this)
         citaViewModel.cargarDoctores()
 
-        // Observador para doctores
         citaViewModel.doctores.observe(this) { doctores ->
             val adapter = DoctorAdapter(doctores) { doctor ->
-                // Asignar el doctor seleccionado
                 selectedDoctor = doctor
 
-                // ✅ Cargar todos los datos del doctor seleccionado
                 cargarDatosDoctor(doctor)
 
                 // Mostrar la pantalla de registro de cita
@@ -91,8 +87,7 @@ class RegistrarCitaActivity : AppCompatActivity() {
             recyclerViewDoctores.adapter = adapter
         }
 
-        // Resto del código sin cambios...
-        // Seleccionar fecha en calendario
+
         calendarView.setOnDateChangeListener { _, year, month, dayOfMonth ->
             selectedDate = "$dayOfMonth/${month + 1}/$year"
             if (::selectedDoctor.isInitialized) {
@@ -100,7 +95,7 @@ class RegistrarCitaActivity : AppCompatActivity() {
             }
         }
 
-        // Mostrar horarios disponibles
+
         citaViewModel.horarios.observe(this) { horarios ->
             layoutChips.removeAllViews()
             if (horarios.isEmpty()) {
@@ -118,7 +113,6 @@ class RegistrarCitaActivity : AppCompatActivity() {
             }
         }
 
-        // Reservar cita
         btnReservar.setOnClickListener {
             if (::selectedDoctor.isInitialized && ::selectedDate.isInitialized && ::selectedTime.isInitialized) {
                 val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@setOnClickListener
@@ -163,7 +157,6 @@ class RegistrarCitaActivity : AppCompatActivity() {
             }
         }
 
-        // Resto del código de navegación sin cambios...
         binding.bottomNavigationView.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
@@ -203,7 +196,6 @@ class RegistrarCitaActivity : AppCompatActivity() {
             }
         }
 
-        // Badge de notificaciones
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val db = FirebaseFirestore.getInstance()
         db.collection("notificaciones")
@@ -219,19 +211,14 @@ class RegistrarCitaActivity : AppCompatActivity() {
     }
 
     private fun cargarDatosDoctor(doctor: Doctor) {
-        // Asignar el doctor seleccionado
         selectedDoctor = doctor
 
-        // Mostrar datos básicos inmediatamente
         doctorSpecialty.text = doctor.especialidad.ifEmpty { "Especialidad no disponible" }
 
-        // ✅ Mostrar calificación temporal mientras carga
         doctorRating.text = "Cargando..."
 
-        // ✅ Calcular calificación real desde Firebase
         calcularCalificacionReal(doctor.usuarioId)
 
-        // Cargar datos del usuario (nombre y foto)
         if (!doctor.usuarioId.isNullOrEmpty() && doctor.usuarioId != "usuarios") {
             FirebaseFirestore.getInstance()
                 .collection("usuarios")
@@ -239,12 +226,10 @@ class RegistrarCitaActivity : AppCompatActivity() {
                 .get()
                 .addOnSuccessListener { doc ->
                     if (doc.exists()) {
-                        // Actualizar nombre desde usuarios
                         val nombre = doc.getString("nombre") ?: doctor.nombre
                         val apellido = doc.getString("apellido") ?: doctor.apellido
                         doctorName.text = "Dr. $nombre $apellido"
 
-                        // Cargar foto circular con Glide
                         val fotoBase64 = doc.getString("fotoBase64")
                         if (!fotoBase64.isNullOrEmpty()) {
                             val bitmap = decodeBase64ToBitmap(fotoBase64)
@@ -260,7 +245,6 @@ class RegistrarCitaActivity : AppCompatActivity() {
                             doctorImage.setImageResource(R.drawable.ic_default_doctor)
                         }
                     } else {
-                        // Si no existe en usuarios, usar datos del doctor
                         doctorName.text = "Dr. ${doctor.nombre} ${doctor.apellido}"
                         doctorImage.setImageResource(R.drawable.ic_default_doctor)
                     }
@@ -277,7 +261,6 @@ class RegistrarCitaActivity : AppCompatActivity() {
         }
     }
 
-    // ✅ NUEVA FUNCIÓN: Calcular calificación real desde Firebase
     private fun calcularCalificacionReal(doctorId: String) {
         FirebaseFirestore.getInstance()
             .collection("calificaciones")
@@ -300,7 +283,6 @@ class RegistrarCitaActivity : AppCompatActivity() {
                     0.0
                 }
 
-                // ✅ Actualizar UI con calificación real
                 runOnUiThread {
                     if (calificacionPromedio > 0) {
                         doctorRating.text = String.format("%.1f", calificacionPromedio)
@@ -316,45 +298,6 @@ class RegistrarCitaActivity : AppCompatActivity() {
                 runOnUiThread {
                     doctorRating.text = "--"
                 }
-            }
-    }
-
-    // Resto de las funciones sin cambios...
-    private fun cargarCalificacionPromedio(doctorId: String) {
-        val calificacionesRef = FirebaseFirestore.getInstance().collection("calificaciones")
-        calificacionesRef.whereEqualTo("doctorId", doctorId)
-            .get()
-            .addOnSuccessListener { result ->
-                var totalCalificaciones = 0.0
-                var cantidadCalificaciones = 0
-
-                for (document in result) {
-                    val calificacion = document.getDouble("calificacion") ?: 0.0
-                    totalCalificaciones += calificacion
-                    cantidadCalificaciones++
-                }
-
-                val calificacionPromedio = if (cantidadCalificaciones > 0) {
-                    totalCalificaciones / cantidadCalificaciones
-                } else {
-                    0.0
-                }
-
-                actualizarCalificacionPromedio(doctorId, calificacionPromedio)
-            }
-            .addOnFailureListener { exception ->
-                Log.e("FirestoreError", "Error al obtener las calificaciones: ", exception)
-            }
-    }
-
-    private fun actualizarCalificacionPromedio(doctorId: String, calificacionPromedio: Double) {
-        val doctorRef = FirebaseFirestore.getInstance().collection("doctores").document(doctorId)
-        doctorRef.update("calificacionPromedio", calificacionPromedio)
-            .addOnSuccessListener {
-                Log.d("Firestore", "Calificación promedio actualizada correctamente")
-            }
-            .addOnFailureListener { e ->
-                Log.e("FirestoreError", "Error al actualizar la calificación promedio: ", e)
             }
     }
 }

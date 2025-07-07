@@ -51,7 +51,6 @@ class ResenasBottomSheetFragment : BottomSheetDialogFragment() {
 
         Log.d("ResenasBottomSheet", "🚀 ResenasBottomSheetFragment iniciado")
 
-        // Obtener datos del doctor desde argumentos
         doctorId = arguments?.getString("doctorId") ?: ""
         doctorNombre = arguments?.getString("doctorNombre") ?: "Doctor"
 
@@ -69,8 +68,6 @@ class ResenasBottomSheetFragment : BottomSheetDialogFragment() {
         cargarResenasDoctor()
     }
 
-
-    // ✅ EXACTAMENTE LA MISMA LÓGICA QUE TIENES EN LA ACTIVITY
     private fun cargarResenasDoctor() {
         mostrarCargando()
 

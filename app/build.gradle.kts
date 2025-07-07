@@ -68,4 +68,6 @@ dependencies {
     annotationProcessor ("com.github.bumptech.glide:compiler:4.12.0")
     implementation ("com.github.bumptech.glide:glide:4.12.0")
     implementation ("de.hdodenhof:circleimageview:3.1.0")
-    implementation("com.google.android.flexbox:flexbox:3.0.0")}
+    implementation("com.google.android.flexbox:flexbox:3.0.0")
+    implementation ("com.getkeepsafe.taptargetview:taptargetview:1.13.3")
+}
